@@ -1,10 +1,10 @@
 Package: extractlxb
 Type: Package
-Title: What the package does (short line)
+Title: lxb extraction functions
 Version: 1.0
 Date: 2017-06-29
-Author: Who wrote it
+Author: Mathurin Dorel
 Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
+Description: Functions to extract informations from lxb files in an ordered manner
 License: What license is it under?
 RoxygenNote: 5.0.1
