@@ -56,7 +56,7 @@ bootstrapping <- function(values, func=median, error=0.05, min_run=100, max_run=
 }
 
 #' Get the association between wells and treatments
-#' @param plate An array describing the organisation of the plate, must be defined in the R session
+#' @param plate An array describing the organisation of the plate. The empty string "" indicates that no treatment were used and that informations should not be extracted from the well.
 #' @export
 extractExperimentalSetup <- function(plate) {
     treatments = list()
@@ -73,7 +73,7 @@ extractExperimentalSetup <- function(plate) {
             blanks = c(blanks, well)
         } else if (grepl( "control", tolower(treatments[[well]]) )) {
             controls = c(controls, well)
-        } else if (length(treatments[[well]]) == 0) {
+        } else if (length(treatments[[well]]) == 0 || grepl("NULL|empty", treatments[[well]])) {
             externals = c(externals, well)
         } else if (!grepl("[Kk][Oo]", treatments[[well]])) {
             wells_per_treatment[[ treatments[[well]] ]] = c(wells_per_treatment[[ treatments[[well]] ]], well)
@@ -101,7 +101,7 @@ extractExperimentalSetup <- function(plate) {
 #' @param externals Wells to exclude from the processing
 #' @param PLOT Whether data should be plotted
 #' @export
-readBeads <- function(lxb_dataset, region, analyte, controls, blanks, wells_per_treatment_with_blank, plot_dir="", externals=c(""), PLOT=F) {
+readBeads <- function(lxb_dataset, region, analyte, controls, blanks, wells_per_treatment_with_blank, plot_dir="", externals=c(""), PLOT=FALSE, verbose=TRUE) {
     wells_per_treatment = wells_per_treatment_with_blank
     wells_per_treatment[["blank"]] = NULL # Suppress this entry
     # Collection of samples caracteristics
@@ -143,6 +143,9 @@ readBeads <- function(lxb_dataset, region, analyte, controls, blanks, wells_per_
         wells_variation = cbind(wells_variation, median_cv)
         cell_variation = cbind(cell_variation, variations$cv)
         cell_data = cbind(cell_data, bead_carac)
+        if (verbose) {
+            message(paste(antibody, "processed..."))
+        }
     }
     colnames(wells_variation) = analyte
     colnames(cell_variation) = analyte
@@ -205,12 +208,14 @@ processReadout <- function(dataset, bead, well, PLOT=FALSE) {
 #' @export
 computeVariation <- function (wells_per_treatment, bead_carac, wilcox_sample, median_cv, blanks, controls, default_cv=0.3, min_cv=0.1) {
     # Get CVs from replicated conditions that are not too close to blank (i.e where CV != noise) to have a global noise level for the readout
+    # Without blank, we don't know the background noise level so we collect all
     replicates_cv = c()
     for (wells in wells_per_treatment) {
         collect = c()
         for (well in wells) {
-            # Without blank, we don't know the background noise level so we collect all
-            if (length(blanks) == 0 || bead_carac[well] > 2 * mean(bead_carac[blanks], na.rm=TRUE)) {
+            if (is.na(bead_carac[well])) {
+                warning(paste("No beads in well ", well))
+            } else if (length(blanks) == 0 || bead_carac[well] > 2 * mean(bead_carac[blanks], na.rm=TRUE)) {
                 collect = c(collect, well)
             }
         }
@@ -252,7 +257,7 @@ computeVariation <- function (wells_per_treatment, bead_carac, wilcox_sample, me
         # Compare the replicate CV with the boostrap CVs and collect the biggest
         square_sum = c()
         for (well in wells) {
-            if (global_cv < median_cv[well]) {
+            if (!is.na(median_cv[well]) && global_cv < median_cv[well]) {
                 square_sum = c(square_sum, median_cv[well]^2 * bead_carac[well]^2)
             } else {
                 square_sum = c(square_sum, global_cv^2 * bead_carac[well]^2)
@@ -368,8 +373,9 @@ writeMIDASfile <- function(datas, variations, dname, blanks, controls, wells_per
 #' @param region Number of the beads to analyse
 #' @param analyte Name of the analytes corresponding to the bead number of region
 #' @param tpw List of the treatments applied to each well (names(tpw) is the name of the well)
+#' @param bn_limit Bead number lower limit to plot the histograms
 #' @export
-analyseBeadDistributions <- function(lxb_dataset, region, analyte="", tpw=list()) {
+analyseBeadDistributions <- function(lxb_dataset, region, analyte="", tpw=list(), bn_limit=20) {
     if (all(analyte == "")) { analyte == region }
     if (length(analyte) != length(region)) { warning("Length of 'analyte' and 'region' differ, setting 'analyte' to 'region'"); analyte=region }
     for (well in names(lxb_dataset)) {
@@ -381,7 +387,7 @@ analyseBeadDistributions <- function(lxb_dataset, region, analyte="", tpw=list()
             names(hist_data) = analyte
             plot(c(-1, 18), rep(0, 2), type="l", col="grey", xlab="log2 Value", main=paste0("Value for well ", well, ifelse(well%in%names(tpw), paste0(" (", tpw[[well]], ")"), "")), xlim=c(0, 17), ylim=c(0, 1.2), ylab="Density")
             tmp=sapply(analyte, function(X) {
-                            if (length(hist_data[[X]]) > 20) {
+                            if (length(hist_data[[X]]) > bn_limit) {
                                 lines(density(log2(hist_data[[X]])), col=which(analyte==X))
                             }
                         })
