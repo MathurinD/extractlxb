@@ -73,9 +73,9 @@ extractExperimentalSetup <- function(plate) {
             blanks = c(blanks, well)
         } else if (grepl( "control", tolower(treatments[[well]]) )) {
             controls = c(controls, well)
-        } else if (length(treatments[[well]]) == 0 || grepl("NULL|empty", treatments[[well]])) {
+        } else if (length(treatments[[well]]) == 0 || grepl("NULL|empty", treatments[[well]]) || treatments[[well]]=="") {
             externals = c(externals, well)
-        } else if (!grepl("[Kk][Oo]", treatments[[well]])) {
+        } else {
             wells_per_treatment[[ treatments[[well]] ]] = c(wells_per_treatment[[ treatments[[well]] ]], well)
         }
     }
