@@ -374,10 +374,12 @@ writeMIDASfile <- function(datas, variations, dname, blanks, controls, wells_per
 #' @param analyte Name of the analytes corresponding to the bead number of region
 #' @param tpw List of the treatments applied to each well (names(tpw) is the name of the well)
 #' @param bn_limit Bead number lower limit to plot the histograms
+#' @param good_count Maximum ordinate of the bead count density
 #' @export
-analyseBeadDistributions <- function(lxb_dataset, region, analyte="", tpw=list(), bn_limit=20) {
+analyseBeadDistributions <- function(lxb_dataset, region, analyte="", tpw=list(), bn_limit=20, good_count=300) {
     if (all(analyte == "")) { analyte == region }
     if (length(analyte) != length(region)) { warning("Length of 'analyte' and 'region' differ, setting 'analyte' to 'region'"); analyte=region }
+    cum_beads = list()
     for (well in names(lxb_dataset)) {
         wdata = lxb_dataset[[well]]
         if (is.null(wdata)) {
@@ -392,8 +394,15 @@ analyseBeadDistributions <- function(lxb_dataset, region, analyte="", tpw=list()
                             }
                         })
             nbeads = sapply(hist_data, function(X) { ll=length(X); ifelse(is.null(ll), 0, ll)  })
+            names(nbeads) = analyte
+            cum_beads[[well]] = nbeads
             legend(13, 1.2, paste0(analyte, " (#", nbeads, ")"), col=1:length(analyte), lwd=1)
         }
     }
+    cum_beads = as.data.frame(cum_beads)
+    cum_beads[cum_beads>300] = 300
+    plot(c(0, good_count + 20), rep(0, 2), type="l", col="grey", xlab="Bead count", ylab="Density", main="Bead number distribution", xlim=c(0, good_count + 10), ylim=c(0, 30/good_count))
+    tmp=sapply(analyte, function(X) { lines(density(as.numeric(cum_beads[X,])), col=which(analyte==X)) })
+    legend(0.8*good_count, 30/good_count, analyte, col=1:length(analyte), lwd=1)
 }
 
