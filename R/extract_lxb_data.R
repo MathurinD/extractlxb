@@ -169,7 +169,7 @@ processReadout <- function(dataset, bead, well, PLOT=FALSE) {
     valids = which(data[,"Bead Valid"]==1 & data[,"Bead ID"]==bead & data[, "RP1S Valid"]==1 & data[, "RP1L Valid"]==1 & data[, "CL1 Valid"]==1 & data[, "CL2 Valid"]==1 )
     values = data[valids, "RP1 Value"]
     if (length(valids) < 3) { # 3 values are required for the shapiro test
-        return(list(values=values, shapiro=c(), cv=0, bootstrap=c(0, 0, 0)))
+        return(list(values=values, shapiro=c(), cv=0, bootstrap=c(NA, NA, NA)))
     }
     # Bootstrap the median on all the data
     bst = bootstrapping(values, error=0.05)
