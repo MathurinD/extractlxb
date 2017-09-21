@@ -406,3 +406,23 @@ analyseBeadDistributions <- function(lxb_dataset, region, analyte="", tpw=list()
     legend(0.8*good_count, 30/good_count, analyte, col=1:length(analyte), lwd=1)
 }
 
+#' Extract values from the lxb dataset
+#'
+#' Extract values from the lxb dataset in a nicely formated list
+#' @param dataset An full lxb dataset
+#' @param region Beads IDs used
+#' @param analyte Analyte corresponding to the analysis.
+#' @param wells_per_treatment_with_blank List of wells where each treatment is applied. It is a list where each entry is named after a treatment and contains a vector of well names.
+#' @export
+sortBeads <- function(lxb_dataset, wells_per_treatment_with_blank, region, analyte) {
+    output = list()
+    for (well in unlist(wells_per_treatment)) {
+        data = lxb_dataset[[well]]
+        output[[well]] = list()
+        for (bead in analyte) {
+            valids = which(data[,"Bead Valid"]==1 & data[,"Bead ID"]==bead & data[, "RP1S Valid"]==1 & data[, "RP1L Valid"]==1 & data[, "CL1 Valid"]==1 & data[, "CL2 Valid"]==1 )
+            output[[well]][[bead]] = data[valids,"RP1 Value"]
+        }
+    }
+    return(output)
+}
