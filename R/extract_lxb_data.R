@@ -419,9 +419,9 @@ sortBeads <- function(lxb_dataset, wells_per_treatment_with_blank, region, analy
     for (well in unlist(wells_per_treatment_with_blank)) {
         data = lxb_dataset[[well]]
         output[[well]] = list()
-        for (bead in analyte) {
-            valids = which(data[,"Bead Valid"]==1 & data[,"Bead ID"]==bead & data[, "RP1S Valid"]==1 & data[, "RP1L Valid"]==1 & data[, "CL1 Valid"]==1 & data[, "CL2 Valid"]==1 )
-            output[[well]][[bead]] = data[valids,"RP1 Value"]
+        for (bnb in 1:length(region)) {
+            valids = which(data[,"Bead Valid"]==1 & data[,"Bead ID"]==region[bnb] & data[, "RP1S Valid"]==1 & data[, "RP1L Valid"]==1 & data[, "CL1 Valid"]==1 & data[, "CL2 Valid"]==1 )
+            output[[well]][[analyte[bnb]]] = data[valids,"RP1 Value"]
         }
     }
     return(output)
