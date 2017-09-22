@@ -416,7 +416,7 @@ analyseBeadDistributions <- function(lxb_dataset, region, analyte="", tpw=list()
 #' @export
 sortBeads <- function(lxb_dataset, wells_per_treatment_with_blank, region, analyte) {
     output = list()
-    for (well in unlist(wells_per_treatment)) {
+    for (well in unlist(wells_per_treatment_with_blank)) {
         data = lxb_dataset[[well]]
         output[[well]] = list()
         for (bead in analyte) {
