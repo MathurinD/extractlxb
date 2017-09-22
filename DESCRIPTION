@@ -7,4 +7,4 @@ Author: Mathurin Dorel
 Maintainer: Who to complain to <yourfault@somewhere.net>
 Description: Functions to extract informations from lxb files in an ordered manner
 License: What license is it under?
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

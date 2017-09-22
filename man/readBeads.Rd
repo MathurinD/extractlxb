@@ -6,7 +6,7 @@
 \usage{
 readBeads(lxb_dataset, region, analyte, controls, blanks,
   wells_per_treatment_with_blank, plot_dir = "", externals = c(""),
-  PLOT = F)
+  PLOT = FALSE, verbose = TRUE)
 }
 \arguments{
 \item{lxb_dataset}{The lxb dataset}
@@ -28,4 +28,3 @@ readBeads(lxb_dataset, region, analyte, controls, blanks,
 \description{
 Process the bead dataset
 }
-

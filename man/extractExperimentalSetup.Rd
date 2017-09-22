@@ -7,9 +7,8 @@
 extractExperimentalSetup(plate)
 }
 \arguments{
-\item{plate}{An array describing the organisation of the plate, must be defined in the R session}
+\item{plate}{An array describing the organisation of the plate. The empty string "" indicates that no treatment were used and that informations should not be extracted from the well.}
 }
 \description{
 Get the association between wells and treatments
 }
-

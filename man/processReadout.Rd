@@ -16,4 +16,3 @@ processReadout(dataset, bead, well, PLOT = FALSE)
 \description{
 Select valid data for the specified bead of the specified well and perform a bootstrap to extract a robust mean an the variation
 }
-

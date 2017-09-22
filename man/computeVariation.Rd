@@ -17,4 +17,3 @@ computeVariation(wells_per_treatment, bead_carac, wilcox_sample, median_cv,
 \description{
 Compute the coefficient of variation for one readout taking into account the variation of the for each well and the variation between samples
 }
-

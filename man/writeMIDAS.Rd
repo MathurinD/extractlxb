@@ -12,4 +12,3 @@ writeMIDAS(beads, dname, inhibitors, stimulators, midas_dir = "midas_data")
 \description{
 Write data extracted and processed using readBeads in MIDAS format
 }
-

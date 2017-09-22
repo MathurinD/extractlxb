@@ -4,7 +4,8 @@
 \alias{analyseBeadDistributions}
 \title{Plot the distribution of beads in each well}
 \usage{
-analyseBeadDistributions(lxb_dataset, region, analyte = "", tpw = list())
+analyseBeadDistributions(lxb_dataset, region, analyte = "", tpw = list(),
+  bn_limit = 20, good_count = 300)
 }
 \arguments{
 \item{region}{Number of the beads to analyse}
@@ -12,8 +13,11 @@ analyseBeadDistributions(lxb_dataset, region, analyte = "", tpw = list())
 \item{analyte}{Name of the analytes corresponding to the bead number of region}
 
 \item{tpw}{List of the treatments applied to each well (names(tpw) is the name of the well)}
+
+\item{bn_limit}{Bead number lower limit to plot the histograms}
+
+\item{good_count}{Maximum ordinate of the bead count density}
 }
 \description{
 Plot the distribution of beads in each well
 }
-

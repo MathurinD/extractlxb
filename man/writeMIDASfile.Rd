@@ -17,4 +17,3 @@ writeMIDASfile(datas, variations, dname, blanks, controls, wells_per_treatment,
 \description{
 Write the data in a file in MIDAS format
 }
-

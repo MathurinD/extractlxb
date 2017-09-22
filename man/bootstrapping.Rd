@@ -24,4 +24,3 @@ a vector or length 3 with the mean, and the 'error' confidence interval of this 
 \description{
 Converging boostrap, with a minimum number of run to ensure some initial variation
 }
-
