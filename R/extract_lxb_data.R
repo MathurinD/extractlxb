@@ -56,7 +56,7 @@ bootstrapping <- function(values, func=median, error=0.05, min_run=100, max_run=
 }
 
 #' Get the association between wells and treatments
-#' @param plate An array describing the organisation of the plate. The empty string "" indicates that no treatment were used and that informations should not be extracted from the well.
+#' @param plate An array describing the organisation of the plate. The empty string "" indicates that no beads were present and that informations should not be extracted from the well.
 #' @export
 extractExperimentalSetup <- function(plate) {
     treatments = list()
@@ -101,7 +101,7 @@ extractExperimentalSetup <- function(plate) {
 #' @param externals Wells to exclude from the processing
 #' @param PLOT Whether data should be plotted
 #' @export
-readBeads <- function(lxb_dataset, region, analyte, controls, blanks, wells_per_treatment_with_blank, plot_dir="", externals=c(""), PLOT=FALSE, verbose=TRUE) {
+readBeads <- function(lxb_dataset, region, analyte, controls, blanks, wells_per_treatment_with_blank, plot_dir="", externals=c(""), PLOT=FALSE, verbose=TRUE, min_bead_number=15) {
     wells_per_treatment = wells_per_treatment_with_blank
     wells_per_treatment[["blank"]] = NULL # Suppress this entry
     # Collection of samples caracteristics
@@ -114,18 +114,18 @@ readBeads <- function(lxb_dataset, region, analyte, controls, blanks, wells_per_
     #wells_variation = data.frame(row.names=names(lxb_dataset))
     wells_variation = c()
     for (bead in region) {
-        antibody = analyte[which(region == bead)]
+        antibody = analyte[region == bead]
         dist_beads[[antibody]] = list()
         bead_carac = c(); # Value of the antibody in each well
         bead_blank = c(); # Value of the blank for this antibody
         bead_control = c(); # Value of the control for this antibody
         median_cv = c(); # Collect the sample CV from the bootstrap
-        if(PLOT) { pdf(paste(plot_dir, gsub("/", "-", gsub(" ", "_", analyte[region==bead])), "_", basename(plot_dir), ".pdf", sep="")) }
+        if(PLOT) { pdf(paste(plot_dir, gsub("/", "-", gsub(" ", "_", antibody)), "_", basename(plot_dir), ".pdf", sep="")) }
         for (well in names(lxb_dataset)) {
             if (!(well %in% externals)) {
                 # Extract the information (bootstrapped median + error)
                 processing = processReadout(lxb_dataset, bead, well, PLOT)
-                if (length(processing$values) <  1) { # If there are no beads, do not use the data
+                if (length(processing$values) <  min_bead_number) { # If there are no beads, do not use the data
                     #warning(paste0("Well ", well, " has 0 beads of type ", analyte[which(region==bead)]))
                     invalids = rbind(invalids, c(well, analyte[which(region==bead)]))
                 }
@@ -150,7 +150,7 @@ readBeads <- function(lxb_dataset, region, analyte, controls, blanks, wells_per_
     colnames(wells_variation) = analyte
     colnames(cell_variation) = analyte
     colnames(cell_data) = analyte
-    if (length(invalids) > 0) { warning(paste( "Some wells have no beads for some readouts:", paste0(unique(invalids[,1]), collapse=", ") )) }
+    if (length(invalids) > 0) { warning(paste( "Some wells do not have enough valid beads for some readouts:", paste0(unique(invalids[,1]), collapse=", ") )) }
     return(list(datas=cell_data, cv=cell_variation, controls=controls, blanks=blanks, wpt=wells_per_treatment, invalid_wells=invalids, normality=normality, wells_variation=wells_variation))
 }
 
@@ -168,7 +168,9 @@ processReadout <- function(dataset, bead, well, PLOT=FALSE) {
     # CL = Classification channel and RP = Readout value
     valids = which(data[,"Bead Valid"]==1 & data[,"Bead ID"]==bead & data[, "RP1S Valid"]==1 & data[, "RP1L Valid"]==1 & data[, "CL1 Valid"]==1 & data[, "CL2 Valid"]==1 )
     values = data[valids, "RP1 Value"]
-    if (length(valids) < 3) { # 3 values are required for the shapiro test
+    unfiltered = values
+    values = values[values > mean(values)/10] # Remove beads without signal (see the analysis of SKNAS_plex_panel_300818 for details on the choice of threshold)
+    if (length(values) < 3) { # 3 values are required for the shapiro test
         return(list(values=values, shapiro=c(), cv=0, bootstrap=c(NA, NA, NA)))
     }
     # Bootstrap the median on all the data
@@ -177,9 +179,11 @@ processReadout <- function(dataset, bead, well, PLOT=FALSE) {
     median_cv = (bst[3] - bst[2]) / (bst[1] * 2 * 1.96) # 2 * 1.96 to have one sd under normality assumption
     # Plot the histogram for each bead in the well with a normal density on top of it
     if(PLOT) {# False for quick computation
-        plot_values = data[valids[data[valids, "RP1 Value"] < ( median(data[valids,"RP1 Value"] + 3*sd(data[valids, "RP1 Value"])) )], "RP1 Value"]
+        plot_values = values[values < median(values) + 3*sd(values)] # Remove high values outliers so the plot stays readable
+        unfiltered = unfiltered[unfiltered < median(values) + 3*sd(values)]
         par(col="black")
-        hist(plot_values, 1 + round(length(plot_values)/5), main=paste(analyte[which(region==bead)], "for well", well), prob=TRUE)
+        hist(unfiltered, 1 + round(length(plot_values)/5), prob=TRUE, col=rgb(0.5, 0.5, 0.5, 0.5), main=paste(analyte[which(region==bead)], "for well", well))
+        hist(plot_values, 1 + round(length(plot_values)/5), col=rgb(0.2, 0.7, 0.2, 0.5), prob=TRUE, add=TRUE)
 
         med = median(plot_values);
         dev = sd(plot_values)
@@ -191,7 +195,7 @@ processReadout <- function(dataset, bead, well, PLOT=FALSE) {
         lines(rep(bst[1], 101), 0:100/1000, col="blue", lty=2, lwd=1.5)
         lines(rep(bst[2], 101), 0:100/1000, col="blue", lty=2, lwd=0.7)
         lines(rep(bst[3], 101), 0:100/1000, col="blue", lty=2, lwd=0.7)
-        mtext(paste(length(plot_values), "beads"), 3)
+        mtext(paste(length(values), "beads selected (out of ", length(unfiltered), ")"), 3)
     }
     # Normality test, collection per cell line and per antibody
     normal = tryCatch(shapiro.test(values)$statistic, error=function(X) {return(1)})
@@ -403,7 +407,7 @@ analyseBeadDistributions <- function(lxb_dataset, region, analyte="", tpw=list()
     cum_beads = as.data.frame(cum_beads)
     cum_beads[cum_beads>300] = 300
     plot(c(0, good_count + 20), rep(0, 2), type="l", col="grey", xlab="Bead count", ylab="Density", main="Bead number distribution", xlim=c(0, good_count + 10), ylim=c(0, 30/good_count))
-    tmp=sapply(analyte, function(X) { lines(density(as.numeric(cum_beads[X,])), col=which(analyte==X)) })
+    tmp=sapply(analyte, function(X) { lines(density(as.numeric(cum_beads[X,]), n=2048), col=which(analyte==X)) })
     legend(0.8*good_count, 30/good_count, analyte, col=1:length(analyte), lwd=1)
 }
 
