@@ -276,8 +276,8 @@ computeVariation <- function (wells_per_treatment, bead_carac, wilcox_sample, me
 #' Write data extracted and processed using readBeads in MIDAS format
 #' @param beads Beads data
 #' @export
-writeMIDAS <- function(beads, dname, inhibitors, stimulators, midas_dir="midas_data") {
-    writeMIDASfile(beads$datas, beads$cv, dname, beads$blanks, beads$controls, beads$wpt, inhibitors, stimulators, midas_dir)
+writeMIDAS <- function(beads, dname, inhibitors, stimulators, midas_dir="midas_data", others=c()) {
+    writeMIDASfile(beads$datas, beads$cv, dname, beads$blanks, beads$controls, beads$wpt, inhibitors, stimulators, midas_dir, others)
 }
 
 #' Write the data in a file in MIDAS format
@@ -286,7 +286,8 @@ writeMIDAS <- function(beads, dname, inhibitors, stimulators, midas_dir="midas_d
 #' @param variations The coefficient of variation from the replicates
 #' @param dname The name of the data
 #' @export
-writeMIDASfile <- function(datas, variations, dname, blanks, controls, wells_per_treatment, inhibitors, stimulators, midas_dir="midas_data") {
+writeMIDASfile <- function(datas, variations, dname, blanks, controls, wells_per_treatment, inhibitors, stimulators, midas_dir="midas_data", others=c()) {
+    #TODO: Other informations
     perturbators = c(stimulators, inhibitors)
     if (nchar(midas_dir) == 0) { midas_dir="midas_data" }
     if (!grepl("/$", midas_dir)) { midas_dir=paste0(midas_dir, "/") }
@@ -294,7 +295,7 @@ writeMIDASfile <- function(datas, variations, dname, blanks, controls, wells_per
     handle = file(paste0(midas_dir, "blunt_", dname, "_MIDAS.csv", sep=""), open="w")
     vhandle = file(paste0(midas_dir, "blunt_", dname, "_MIDAS.var", sep=""), open="w")
     # First line with headers, remove previous file content
-    new_line = "ID:type"
+    new_line = "ID:type,ID:well"
     for (treatment in perturbators) {
         new_line = paste(new_line, ",TR:", treatment, sep="")
     }
@@ -306,7 +307,7 @@ writeMIDASfile <- function(datas, variations, dname, blanks, controls, wells_per
     writeLines(new_line, vhandle)
     # Blanks
     for (well in blanks) {
-        new_line = "blank";
+        new_line = paste("blank", well, sep=",")
         for (treatment in perturbators) { # TR fields
             new_line = paste(new_line, ",0", sep="")
         }
@@ -321,7 +322,7 @@ writeMIDASfile <- function(datas, variations, dname, blanks, controls, wells_per
     }
     # Controls
     for (well in controls) {
-        new_line = "c";
+        new_line = paste("c", well, sep=",")
         for (treatment in perturbators) { # TR fields
             new_line = paste(new_line, ",0", sep="")
         }
@@ -341,7 +342,7 @@ writeMIDASfile <- function(datas, variations, dname, blanks, controls, wells_per
             stim = stimulators[stimulators %in% unlist(strsplit(treatment, "\\+"))]
             inhib = inhibitors[inhibitors %in% unlist(strsplit(treatment, "\\+"))]
             # Put the perturbation in the MIDAS format
-            init_line = "t"
+            init_line = "t,WELL"
             for (perturbation in perturbators) {
                 if (perturbation %in% c(inhib, stim)) {
                     init_line = paste(init_line, "1", sep=",")
@@ -352,7 +353,7 @@ writeMIDASfile <- function(datas, variations, dname, blanks, controls, wells_per
             init_line = paste(init_line, "0", sep=",") # DA field
 
             for (well in wells_per_treatment[[treatment]]) {
-                new_line = init_line
+                new_line = gsub("WELL", well, init_line)
                 var_line = new_line;
                 for (antibody in colnames(datas)) { # DV fields
                     new_line = paste(new_line, round(datas[well, antibody]), sep=",")
